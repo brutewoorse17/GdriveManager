@@ -74,7 +74,7 @@ credentials_file = None
 @app.on_message(filters.command("start"))
 async def start_command(client: Client, message: Message):
     # Get credentials file when the bot starts
-    global credentials_file
+    global credentials_file, service  # Declare service as global
     credentials_file = await get_credentials_file(client, message)
     if not credentials_file:
         await message.reply_text("Failed to obtain credentials.json. Exiting...")
@@ -96,12 +96,11 @@ async def start_command(client: Client, message: Message):
                 creds = flow.run_local_server(port=0)
             with open('token.pickle', 'wb') as token:
                 pickle.dump(creds, token)
-        service = build('drive', 'v3', credentials=creds)
+        service = build('drive', 'v3', credentials=creds)  # Assign to the global service variable
         await message.reply_text("Google Drive API setup successful!")
     except Exception as e:
         logger.exception("Error setting up Google Drive API")
         await message.reply_text(f"Failed to set up Google Drive API: {e}")
-
 
 # Flask app for handling the redirect
 flask_app = flask.Flask(__name__)
@@ -163,7 +162,7 @@ async def create_folder_command(client: Client, message: Message):
             'name': folder_name,
             'mimeType': 'application/vnd.google-apps.folder'
         }
-        file = service.files().create(body=file_metadata, fields='id').execute()
+        file = service.files().create(body=file_metadata, fields='id').execute()  # Access the global service
         await message.reply_text(f"Folder '{folder_name}' created with ID: {file.get('id')}")
     except Exception as e:
         logger.exception("Error creating folder")
@@ -178,7 +177,7 @@ async def create_multiple_folders_command(client: Client, message: Message):
                 'name': folder_name.strip(),
                 'mimeType': 'application/vnd.google-apps.folder'
             }
-            file = service.files().create(body=file_metadata, fields='id').execute()
+            file = service.files().create(body=file_metadata, fields='id').execute()  # Access the global service
             await message.reply_text(f"Folder '{folder_name.strip()}' created with ID: {file.get('id')}")
     except Exception as e:
         logger.exception("Error creating multiple folders")
