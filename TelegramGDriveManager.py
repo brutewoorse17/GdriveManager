@@ -17,19 +17,6 @@ logging.basicConfig(level=logging.ERROR,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Function to install requirements
-def install_requirements(requirements_file="requirements.txt"):
-    """
-    Installs the required packages from a requirements.txt file.
-    """
-    try:
-        os.system(f"pip install -r {requirements_file}")
-        print("Requirements installed successfully!")
-    except Exception as e:
-        logger.exception("Error installing requirements")  # Log the exception
-
-# Install requirements
-install_requirements()
 
 # Pyrogram bot setup
 API_ID = '29001415'  # Replace with your API ID
