@@ -80,8 +80,8 @@ async def start_command(client: Client, message: Message):
     global credentials_file, service  # Declare service as global
     credentials_file = await get_credentials_file(client, message)
     if not credentials_file:
-        await message.reply_text("Failed to obtain credentials.json. Exiting...")
-        exit(1)
+        await message.reply_text("Failed to obtain credentials.json. Please upload it and try /start again.")
+        return  # Exit the function if credentials_file is None
 
     # Google Drive API setup (moved inside start_command)
     creds = None
@@ -93,6 +93,10 @@ async def start_command(client: Client, message: Message):
             if creds and creds.expired and creds.refresh_token:
                 creds.refresh(Request())
             else:
+                if not credentials_file:  # Check if credentials_file is None
+                    logger.error("credentials_file is None in start_command")
+                    await message.reply_text("credentials.json not found. Please upload it and try /start again.")
+                    return
                 flow = InstalledAppFlow.from_client_secrets_file(
                     credentials_file, SCOPES)
                 creds = flow.run_local_server(port=0)
@@ -103,7 +107,6 @@ async def start_command(client: Client, message: Message):
     except Exception as e:
         logger.exception("Error setting up Google Drive API")
         await message.reply_text(f"Failed to set up Google Drive API: {e}")
-
 
 # Flask app for handling the redirect
 flask_app = flask.Flask(__name__)
@@ -122,6 +125,11 @@ def oauth2callback():
 async def auth_google_command(client: Client, message: Message):
     global auth_code
     try:
+        if not credentials_file:  # Check if credentials_file is None
+            logger.error("credentials_file is None in auth_google_command")
+            await message.reply_text("credentials.json not found. Please upload it using /start command.")
+            return
+
         # 1. Generate authorization URL
         flow = InstalledAppFlow.from_client_secrets_file(
             credentials_file, SCOPES)  # Use credentials_file here
