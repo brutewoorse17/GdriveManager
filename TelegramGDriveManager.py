@@ -25,6 +25,9 @@ BOT_TOKEN = '7505846620:AAFvv-sFybGfFILS-dRC8l7ph_0rqIhDgRM'  # Replace with you
 
 app = Client("my_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
+# Google Drive API setup (SCOPES defined globally)
+SCOPES = ['https://www.googleapis.com/auth/drive'] 
+
 # Function to auto-detect and upload credentials.json
 async def get_credentials_file(client, message):
     """
@@ -81,7 +84,6 @@ async def start_command(client: Client, message: Message):
         exit(1)
 
     # Google Drive API setup (moved inside start_command)
-    SCOPES = ['https://www.googleapis.com/auth/drive']
     creds = None
     try:
         if os.path.exists('token.pickle'):
@@ -101,6 +103,7 @@ async def start_command(client: Client, message: Message):
     except Exception as e:
         logger.exception("Error setting up Google Drive API")
         await message.reply_text(f"Failed to set up Google Drive API: {e}")
+
 
 # Flask app for handling the redirect
 flask_app = flask.Flask(__name__)
