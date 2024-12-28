@@ -1,6 +1,7 @@
 import os
 import threading
 import logging
+import time
 
 from pyrogram import Client, filters
 from pyrogram.types import Message
@@ -30,6 +31,61 @@ def install_requirements(requirements_file="requirements.txt"):
 # Install requirements
 install_requirements()
 
+# Function to auto-detect and upload credentials.json
+def get_credentials_file():
+    """
+    Auto-detects the credentials.json file and uploads it to the bot directory.
+    """
+    try:
+        # Check if credentials.json exists in the current directory
+        if os.path.exists("credentials.json"):
+            return "credentials.json"
+
+        # If not found, prompt the user to upload the file
+        print("credentials.json not found. Please upload the file:")
+
+        credentials_file = None  # Initialize credentials_file
+
+        @app.on_message(filters.document)
+        async def handle_credentials_upload(client, message):
+            global credentials_file
+            # Check if the uploaded file is named "credentials.json"
+            if message.document.file_name == "credentials.json":
+                # Download the file to the bot directory
+                credentials_file = await message.download()
+                print(f"credentials.json uploaded successfully: {credentials_file}")
+                # Remove the handler to stop listening for more documents
+                app.remove_handler(handle_credentials_upload)
+
+        # Wait for the user to upload the file with a timeout
+        timeout = 60  # Timeout in seconds
+        start_time = time.time()
+        while credentials_file is None and time.time() - start_time < timeout:
+            time.sleep(1)
+
+        if credentials_file is None:
+            print("Timeout waiting for credentials.json upload.")
+            return None
+
+        return credentials_file
+
+    except Exception as e:
+        logger.exception("Error getting credentials file")
+        return None
+
+# Pyrogram bot setup
+API_ID = 'YOUR_API_ID'  # Replace with your API ID
+API_HASH = 'YOUR_API_HASH'  # Replace with your API hash
+BOT_TOKEN = 'YOUR_BOT_TOKEN'  # Replace with your bot token
+
+app = Client("my_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+
+# Get credentials file
+credentials_file = get_credentials_file()
+if not credentials_file:
+    print("Failed to obtain credentials.json. Exiting...")
+    exit(1)
+
 # Google Drive API setup
 SCOPES = ['https://www.googleapis.com/auth/drive']
 creds = None
@@ -42,20 +98,13 @@ try:
             creds.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', SCOPES)
+                credentials_file, SCOPES)
             creds = flow.run_local_server(port=0)
         with open('token.pickle', 'wb') as token:
             pickle.dump(creds, token)
     service = build('drive', 'v3', credentials=creds)
 except Exception as e:
     logger.exception("Error setting up Google Drive API")
-
-# Pyrogram bot setup
-API_ID = '29001415'  # Replace with your API ID
-API_HASH = '92152fd62ffbff12f057edc057f978f1'  # Replace with your API hash
-BOT_TOKEN = '7505846620:AAFvv-sFybGfFILS-dRC8l7ph_0rqIhDgRM'  # Replace with your bot token
-
-app = Client("my_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
 # Flask app for handling the redirect
 flask_app = flask.Flask(__name__)
@@ -67,8 +116,6 @@ auth_code = None
 def oauth2callback():
     global auth_code
     auth_code = flask.request.args.get("code")
-    # This is a basic example; in a real app, you'd want to
-    # do more than just print the code to the console.
     print(f"Received auth code: {auth_code}")
     return "Authorization successful! You can close this window."
 
@@ -78,19 +125,25 @@ async def auth_google_command(client: Client, message: Message):
     try:
         # 1. Generate authorization URL
         flow = InstalledAppFlow.from_client_secrets_file(
-            'credentials.json', SCOPES)
-        flow.redirect_uri = "http://localhost:5000/oauth2callback"  # Your redirect URI
+            credentials_file, SCOPES)  # Use credentials_file here
+        flow.redirect_uri = "http://localhost:5000/oauth2callback"
         auth_url, _ = flow.authorization_url(prompt="consent")
 
         # 2. Send authorization URL to the user
         await message.reply_text(f"Please visit this URL to authorize: {auth_url}")
 
-        # 3. Start a web server to listen for the authorization code in a separate thread
+        # 3. Start a web server to listen for the authorization code
         threading.Thread(target=flask_app.run, kwargs={'port': 5000}).start()
 
-        # 4. Wait for the authorization code
-        while auth_code is None:
-            pass  # This is a simple wait; consider using a more robust mechanism
+        # 4. Wait for the authorization code with a timeout
+        timeout = 60  # Timeout in seconds
+        start_time = time.time()
+        while auth_code is None and time.time() - start_time < timeout:
+            time.sleep(1)
+
+        if auth_code is None:
+            await message.reply_text("Timeout waiting for authorization.")
+            return
 
         # 5. Exchange code for tokens
         flow.fetch_token(code=auth_code)
@@ -102,7 +155,7 @@ async def auth_google_command(client: Client, message: Message):
         await message.reply_text("Authorization successful!")
 
     except Exception as e:
-        logger.exception("Error during authorization")  # Log the exception
+        logger.exception("Error during authorization")
         await message.reply_text(f"Authorization failed: {e}")
 
 @app.on_message(filters.command("start"))
@@ -143,4 +196,3 @@ async def echo(client: Client, message: Message):
     await message.reply_text(message.text)
 
 app.run()
-logger.info("Bot is Booted")
