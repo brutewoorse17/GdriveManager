@@ -51,9 +51,9 @@ except Exception as e:
     logger.exception("Error setting up Google Drive API")
 
 # Pyrogram bot setup
-API_ID = 'YOUR_API_ID'  # Replace with your API ID
-API_HASH = 'YOUR_API_HASH'  # Replace with your API hash
-BOT_TOKEN = 'YOUR_BOT_TOKEN'  # Replace with your bot token
+API_ID = '29001415'  # Replace with your API ID
+API_HASH = '92152fd62ffbff12f057edc057f978f1'  # Replace with your API hash
+BOT_TOKEN = '7505846620:AAFvv-sFybGfFILS-dRC8l7ph_0rqIhDgRM'  # Replace with your bot token
 
 app = Client("my_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
