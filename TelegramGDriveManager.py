@@ -19,18 +19,6 @@ logger = logging.getLogger(__name__)
 
 
 
-# Function to auto-detect and upload credentials.json
-defx """
-    Auto-detects the credentials.json file and uploads it to the bot directory.
-    """
-    try:
-        # Check if credentials.json exists in the current directory
-        if os.path.exists("credentials.json"):
-            return "credentials.json"
-
-        # If not found, prompt the user to upload the file
-        print("credentials.json not found. Please upload the file:")
-
         credentials_file = None  # Initialize credentials_file
 
         @app.on_message(filters.document)
