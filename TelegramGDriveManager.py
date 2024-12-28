@@ -20,8 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 # Function to auto-detect and upload credentials.json
-def get_credentials_file():
-    """
+defx """
     Auto-detects the credentials.json file and uploads it to the bot directory.
     """
     try:
@@ -46,7 +45,7 @@ def get_credentials_file():
                 app.remove_handler(handle_credentials_upload)
 
         # Wait for the user to upload the file with a timeout
-        timeout = 60  # Timeout in seconds
+        timeout = 5  # Timeout in seconds
         start_time = time.time()
         while credentials_file is None and time.time() - start_time < timeout:
             time.sleep(1)
@@ -67,12 +66,6 @@ API_HASH = '92152fd62ffbff12f057edc057f978f1'  # Replace with your API hash
 BOT_TOKEN = '7505846620:AAFvv-sFybGfFILS-dRC8l7ph_0rqIhDgRM'  # Replace with your bot token
 
 app = Client("my_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
-
-# Get credentials file
-credentials_file = get_credentials_file()
-if not credentials_file:
-    print("Failed to obtain credentials.json. Exiting...")
-    exit(1)
 
 # Google Drive API setup
 SCOPES = ['https://www.googleapis.com/auth/drive']
